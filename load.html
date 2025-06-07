@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crane Monitoring - Load Lift Log</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --gray-color: #95a5a6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 20px 0;
+        }
+        
+        .logo {
+            text-align: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .logo h2 {
+            font-size: 1.5rem;
+        }
+        
+        .nav-menu {
+            margin-top: 20px;
+        }
+        
+        .nav-item {
+            padding: 12px 20px;
+            transition: all 0.3s;
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .nav-item.active {
+            background-color: var(--primary-color);
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .page-title h1 {
+            font-size: 1.8rem;
+            color: var(--dark-color);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        /* Filter Controls */
+        .log-controls {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .filter-group {
+            margin-bottom: 0;
+        }
+        
+        .filter-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .filter-select, .filter-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-self: flex-end;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: white;
+            color: var(--dark-color);
+            border: 1px solid #ddd;
+        }
+        
+        /* Load Log Table */
+        .log-table-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        
+        .log-table th {
+            text-align: left;
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark-color);
+            border-bottom: 2px solid #eee;
+            position: sticky;
+            top: 0;
+        }
+        
+        .log-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .log-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .log-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .load-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-normal {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .log-controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-column: 1;
+            }
+        }
+       
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="logo">
+                <h2>CraneMonitor Pro</h2>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-item">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="operations.html" class="nav-link">
+                        <i class="fas fa-history"></i>
+                        <span>Operations Log</span>
+                    </a>
+                </div>
+                <div class="nav-item active">
+                    <a href="load.html" class="nav-link">
+                        <i class="fas fa-weight-hanging"></i>
+                        <span>Load Lift Log</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="voltage.html" class="nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Voltage Monitoring</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="temperature.html" class="nav-link">
+                        <i class="fas fa-temperature-high"></i>
+                        <span>Temperature</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="errors.html" class="nav-link">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Error Log</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="reports.html" class="nav-link">
+                        <i class="fas fa-file-export"></i>
+                        <span>Reports</span>
+                    </a>
+                </div>
+              
+                <div class="nav-item">
+                    <a href="alerts.html" class="nav-link">
+                        <i class="fas fa-bell"></i>
+                        <span>Alerts</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="help.html" class="nav-link">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Help</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div class="header">
+                <div class="page-title">
+                    <h1>Load Lift Log</h1>
+                    <p>Records of all load weight measurements</p>
+                </div>
+                <div class="user-info">
+                    <img src="profile.png" alt="User">
+                    <span>Admin User</span>
+                </div>
+            </div>
+            
+            <!-- Filter Controls -->
+            <div class="log-controls">
+                <div class="filter-group">
+                    <label class="filter-label">Crane</label>
+                    <select class="filter-select" id="crane-filter">
+                        <option value="all">All Cranes</option>
+                        <option value="CRN-001">Gantry Crane #1 (CRN-001)</option>
+                        <option value="CRN-002">Overhead Crane #2 (CRN-002)</option>
+                        <option value="CRN-003">Jib Crane #3 (CRN-003)</option>
+                        <option value="CRN-004">Bridge Crane #4 (CRN-004)</option>
+                        <option value="CRN-005">Gantry Crane #5 (CRN-005)</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Load Status</label>
+                    <select class="filter-select" id="status-filter">
+                        <option value="all">All Statuses</option>
+                        <option value="normal">Normal</option>
+                        <option value="warning">Warning (80-95%)</option>
+                        <option value="overload">Overload (>95%)</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Date Range</label>
+                    <select class="filter-select" id="date-filter">
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="all">All Dates</option>
+                    </select>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-redo"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+<!-- Five Crane Chart Container -->
+<div class="chart-container" style="background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 20px; margin-bottom: 20px;">
+    <h3 style="margin-bottom: 15px; color: var(--dark-color);">Five Crane Load Comparison</h3>
+    <div style="height: 400px;">
+        <canvas id="loadChart"></canvas>
+    </div>
+</div>
+            <!-- Load Log Table -->
+            <div class="log-table-container">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Crane ID</th>
+                            <th>Operation</th>
+                            <th>Load (kg)</th>
+                            <th>Capacity</th>
+                            <th>Percentage</th>
+                            <th>Status</th>
+                            <th>Operator</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2023-06-15 08:23:45</td>
+                            <td>CRN-001</td>
+                            <td>Hoist</td>
+                            <td>3,250</td>
+                            <td>5,000</td>
+                            <td>65%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 08:45:12</td>
+                            <td>CRN-002</td>
+                            <td>Travel</td>
+                            <td>4,800</td>
+                            <td>10,000</td>
+                            <td>48%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 1</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 10:05:27</td>
+                            <td>CRN-004</td>
+                            <td>Hoist</td>
+                            <td>5,700</td>
+                            <td>6,000</td>
+                            <td>95%</td>
+                            <td><span class="load-status status-warning">Warning</span></td>
+                            <td>Operator 4</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 11:15:06</td>
+                            <td>CRN-005</td>
+                            <td>Travel</td>
+                            <td>7,500</td>
+                            <td>8,000</td>
+                            <td>94%</td>
+                            <td><span class="load-status status-warning">Warning</span></td>
+                            <td>Operator 5</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 13:18:37</td>
+                            <td>CRN-003</td>
+                            <td>Hoist</td>
+                            <td>6,200</td>
+                            <td>5,000</td>
+                            <td>124%</td>
+                            <td><span class="load-status status-danger">Overload</span></td>
+                            <td>Operator 2</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 07:15:22</td>
+                            <td>CRN-002</td>
+                            <td>Hoist</td>
+                            <td>3,800</td>
+                            <td>10,000</td>
+                            <td>38%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 1</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 09:22:18</td>
+                            <td>CRN-001</td>
+                            <td>Travel</td>
+                            <td>4,200</td>
+                            <td>5,000</td>
+                            <td>84%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 11:30:07</td>
+                            <td>CRN-004</td>
+                            <td>Lower</td>
+                            <td>6,100</td>
+                            <td>6,000</td>
+                            <td>102%</td>
+                            <td><span class="load-status status-danger">Overload</span></td>
+                            <td>Operator 4</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 14:05:19</td>
+                            <td>CRN-005</td>
+                            <td>Switch</td>
+                            <td>1,800</td>
+                            <td>8,000</td>
+                            <td>23%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 5</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-13 08:10:33</td>
+                            <td>CRN-003</td>
+                            <td>Hoist</td>
+                            <td>4,500</td>
+                            <td>5,000</td>
+                            <td>90%</td>
+                            <td><span class="load-status status-warning">Warning</span></td>
+                            <td>Operator 2</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-13 10:45:12</td>
+                            <td>CRN-001</td>
+                            <td>Travel</td>
+                            <td>3,700</td>
+                            <td>5,000</td>
+                            <td>74%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-13 12:30:45</td>
+                            <td>CRN-002</td>
+                            <td>Lower</td>
+                            <td>9,200</td>
+                            <td>10,000</td>
+                            <td>92%</td>
+                            <td><span class="load-status status-warning">Warning</span></td>
+                            <td>Operator 1</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-13 15:15:28</td>
+                            <td>CRN-004</td>
+                            <td>Hoist</td>
+                            <td>5,500</td>
+                            <td>6,000</td>
+                            <td>92%</td>
+                            <td><span class="load-status status-warning">Warning</span></td>
+                            <td>Operator 4</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-12 08:45:56</td>
+                            <td>CRN-005</td>
+                            <td>Travel</td>
+                            <td>6,800</td>
+                            <td>8,000</td>
+                            <td>85%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 5</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-12 11:20:34</td>
+                            <td>CRN-003</td>
+                            <td>Hoist</td>
+                            <td>5,200</td>
+                            <td>5,000</td>
+                            <td>104%</td>
+                            <td><span class="load-status status-danger">Overload</span></td>
+                            <td>Operator 2</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-12 13:45:17</td>
+                            <td>CRN-001</td>
+                            <td>Lower</td>
+                            <td>2,500</td>
+                            <td>5,000</td>
+                            <td>50%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-11 09:10:22</td>
+                            <td>CRN-002</td>
+                            <td>Travel</td>
+                            <td>8,500</td>
+                            <td>10,000</td>
+                            <td>85%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 1</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-11 10:55:43</td>
+                            <td>CRN-004</td>
+                            <td>Hoist</td>
+                            <td>5,900</td>
+                            <td>6,000</td>
+                            <td>98%</td>
+                            <td><span class="load-status status-warning">Warning</span></td>
+                            <td>Operator 4</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-11 14:30:12</td>
+                            <td>CRN-005</td>
+                            <td>Switch</td>
+                            <td>3,200</td>
+                            <td>8,000</td>
+                            <td>40%</td>
+                            <td><span class="load-status status-normal">Normal</span></td>
+                            <td>Operator 5</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-10 07:45:39</td>
+                            <td>CRN-003</td>
+                            <td>Hoist</td>
+                            <td>4,800</td>
+                            <td>5,000</td>
+                            <td>96%</td>
+                            <td><span class="load-status status-warning">Warning</span></td>
+                            <td>Operator 2</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Previous navigation and filter code remains the same...
+
+    // Clean five-crane line chart
+    const ctx = document.getElementById('loadChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM'],
+            datasets: [
+                {
+                    label: 'CRN-001 (5T)',
+                    data: [45, 65, 72, 68, 55],
+                    borderColor: '#3498db',  // Blue
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.1
+                },
+                {
+                    label: 'CRN-002 (10T)',
+                    data: [38, 48, 52, 85, 92],
+                    borderColor: '#2ecc71',  // Green
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.1
+                },
+                {
+                    label: 'CRN-003 (5T)',
+                    data: [65, 72, 90, 104, 85],
+                    borderColor: '#e74c3c',  // Red
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.1
+                },
+                {
+                    label: 'CRN-004 (6T)',
+                    data: [55, 92, 85, 95, 80],
+                    borderColor: '#f39c12',  // Orange
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.1
+                },
+                {
+                    label: 'CRN-005 (8T)',
+                    data: [40, 85, 75, 94, 70],
+                    borderColor: '#9b59b6',  // Purple
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 120,
+                    title: {
+                        display: true,
+                        text: 'Load Percentage (%)',
+                        font: {
+                            weight: 'bold',
+                            size: 13
+                        }
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        },
+                        stepSize: 20
+                    },
+                    grid: {
+                        color: 'rgba(0,0,0,0.05)',
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Time of Day',
+                        font: {
+                            weight: 'bold',
+                            size: 13
+                        }
+                    },
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 20,
+                        font: {
+                            size: 12
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += context.raw + '%';
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+       
+
+</body>
+</html>

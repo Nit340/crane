@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crane Monitoring - Operations Log</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2980b9;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --gray-color: #95a5a6;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 20px 0;
+        }
+        
+        .logo {
+            text-align: center;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .logo h2 {
+            font-size: 1.5rem;
+        }
+        
+        .nav-menu {
+            margin-top: 20px;
+        }
+        
+        .nav-item {
+            padding: 12px 20px;
+            transition: all 0.3s;
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(255,255,255,0.1);
+        }
+        
+        .nav-item.active {
+            background-color: var(--primary-color);
+        }
+        
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* Main Content Styles */
+        .main-content {
+            padding: 20px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .page-title h1 {
+            font-size: 1.8rem;
+            color: var(--dark-color);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-info img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        /* Filter Controls */
+        .log-controls {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .filter-group {
+            margin-bottom: 0;
+        }
+        
+        .filter-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .filter-select, .filter-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            align-self: flex-end;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: white;
+            color: var(--dark-color);
+            border: 1px solid #ddd;
+        }
+        
+        /* Operations Log Table */
+        .log-table-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        
+        .log-table th {
+            text-align: left;
+            padding: 12px 15px;
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: var(--dark-color);
+            border-bottom: 2px solid #eee;
+            position: sticky;
+            top: 0;
+        }
+        
+        .log-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .log-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .log-table tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .operation-type {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .type-hoist {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .type-lower {
+            background-color: #cce5ff;
+            color: #004085;
+        }
+        
+        .type-travel {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
+        .type-switch {
+            background-color: #e2e3e5;
+            color: #383d41;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .log-controls {
+                grid-template-columns: 1fr;
+            }
+            
+            .action-buttons {
+                grid-column: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="logo">
+                <h2>CraneMonitor Pro</h2>
+            </div>
+            <div class="nav-menu">
+                <div class="nav-item">
+                    <a href="index.html" class="nav-link">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item active">
+                    <a href="operations.html" class="nav-link">
+                        <i class="fas fa-history"></i>
+                        <span>Operations Log</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="load.html" class="nav-link">
+                        <i class="fas fa-weight-hanging"></i>
+                        <span>Load Lift Log</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="voltage.html" class="nav-link">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Voltage Monitoring</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="temperature.html" class="nav-link">
+                        <i class="fas fa-temperature-high"></i>
+                        <span>Temperature</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="errors.html" class="nav-link">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Error Log</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="reports.html" class="nav-link">
+                        <i class="fas fa-file-export"></i>
+                        <span>Reports</span>
+                    </a>
+                </div>
+           
+                <div class="nav-item">
+                    <a href="alerts.html" class="nav-link">
+                        <i class="fas fa-bell"></i>
+                        <span>Alerts</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="help.html" class="nav-link">
+                        <i class="fas fa-question-circle"></i>
+                        <span>Help</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div class="header">
+                <div class="page-title">
+                    <h1>Operations Log</h1>
+                    <p>Complete record of all crane operations</p>
+                </div>
+                <div class="user-info">
+                    <img src="profile.png" alt="User">
+                    <span>Admin User</span>
+                </div>
+            </div>
+            
+            <!-- Filter Controls -->
+            <div class="log-controls">
+                <div class="filter-group">
+                    <label class="filter-label">Crane</label>
+                    <select class="filter-select" id="crane-filter">
+                        <option value="all">All Cranes</option>
+                        <option value="CRN-001">Gantry Crane #1 (CRN-001)</option>
+                        <option value="CRN-002">Overhead Crane #2 (CRN-002)</option>
+                        <option value="CRN-003">Jib Crane #3 (CRN-003)</option>
+                        <option value="CRN-004">Bridge Crane #4 (CRN-004)</option>
+                        <option value="CRN-005">Gantry Crane #5 (CRN-005)</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Operation Type</label>
+                    <select class="filter-select" id="type-filter">
+                        <option value="all">All Types</option>
+                        <option value="hoist">Hoisting</option>
+                        <option value="lower">Lowering</option>
+                        <option value="travel">Travel</option>
+                        <option value="switch">Switching</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label class="filter-label">Date Range</label>
+                    <select class="filter-select" id="date-filter">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Apply Filters
+                    </button>
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-redo"></i>
+                        Reset
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Operations Log Table -->
+            <div class="log-table-container">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Crane ID</th>
+                            <th>Operation</th>
+                            <th>Duration</th>
+                            <th>Load (kg)</th>
+                            <th>Start Position</th>
+                            <th>End Position</th>
+                            <th>Operator</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2023-06-15 08:23:45</td>
+                            <td>CRN-001</td>
+                            <td><span class="operation-type type-hoist">Hoist</span></td>
+                            <td>2:15</td>
+                            <td>3,250</td>
+                            <td>Bay 1, Ground</td>
+                            <td>Bay 1, Height 12m</td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 08:45:12</td>
+                            <td>CRN-002</td>
+                            <td><span class="operation-type type-travel">Travel</span></td>
+                            <td>1:42</td>
+                            <td>4,800</td>
+                            <td>Bay 1, Height 8m</td>
+                            <td>Bay 3, Height 8m</td>
+                            <td>Operator 1</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 09:12:33</td>
+                            <td>CRN-001</td>
+                            <td><span class="operation-type type-lower">Lower</span></td>
+                            <td>1:56</td>
+                            <td>3,250</td>
+                            <td>Bay 1, Height 12m</td>
+                            <td>Bay 1, Ground</td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 09:30:18</td>
+                            <td>CRN-003</td>
+                            <td><span class="operation-type type-switch">Switch</span></td>
+                            <td>0:45</td>
+                            <td>1,200</td>
+                            <td>Dock 2, Position A</td>
+                            <td>Dock 2, Position B</td>
+                            <td>Operator 2</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 10:05:27</td>
+                            <td>CRN-004</td>
+                            <td><span class="operation-type type-hoist">Hoist</span></td>
+                            <td>3:22</td>
+                            <td>5,700</td>
+                            <td>Storage, Ground</td>
+                            <td>Storage, Height 15m</td>
+                            <td>Operator 4</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 10:45:52</td>
+                            <td>CRN-002</td>
+                            <td><span class="operation-type type-lower">Lower</span></td>
+                            <td>2:18</td>
+                            <td>4,800</td>
+                            <td>Bay 3, Height 8m</td>
+                            <td>Bay 3, Ground</td>
+                            <td>Operator 1</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 11:15:06</td>
+                            <td>CRN-005</td>
+                            <td><span class="operation-type type-travel">Travel</span></td>
+                            <td>4:33</td>
+                            <td>7,500</td>
+                            <td>Storage West</td>
+                            <td>Loading Dock</td>
+                            <td>Operator 5</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 11:52:41</td>
+                            <td>CRN-001</td>
+                            <td><span class="operation-type type-hoist">Hoist</span></td>
+                            <td>1:47</td>
+                            <td>2,800</td>
+                            <td>Bay 2, Ground</td>
+                            <td>Bay 2, Height 10m</td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 12:30:15</td>
+                            <td>CRN-003</td>
+                            <td><span class="operation-type type-travel">Travel</span></td>
+                            <td>3:05</td>
+                            <td>3,200</td>
+                            <td>Dock 1, Position B</td>
+                            <td>Dock 2, Position A</td>
+                            <td>Operator 2</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-15 13:18:37</td>
+                            <td>CRN-004</td>
+                            <td><span class="operation-type type-lower">Lower</span></td>
+                            <td>2:42</td>
+                            <td>5,700</td>
+                            <td>Storage, Height 15m</td>
+                            <td>Storage, Ground</td>
+                            <td>Operator 4</td>
+                        </tr>
+                        <!-- Additional 140 records would be here in the same format -->
+                        <tr>
+                            <td>2023-06-14 07:15:22</td>
+                            <td>CRN-002</td>
+                            <td><span class="operation-type type-hoist">Hoist</span></td>
+                            <td>2:30</td>
+                            <td>3,800</td>
+                            <td>Bay 2, Ground</td>
+                            <td>Bay 2, Height 10m</td>
+                            <td>Operator 1</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 08:05:44</td>
+                            <td>CRN-005</td>
+                            <td><span class="operation-type type-switch">Switch</span></td>
+                            <td>0:55</td>
+                            <td>2,500</td>
+                            <td>Loading Dock, Position A</td>
+                            <td>Loading Dock, Position B</td>
+                            <td>Operator 5</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 09:22:18</td>
+                            <td>CRN-001</td>
+                            <td><span class="operation-type type-travel">Travel</span></td>
+                            <td>3:15</td>
+                            <td>4,200</td>
+                            <td>Bay 1, Height 8m</td>
+                            <td>Bay 3, Height 8m</td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 10:45:33</td>
+                            <td>CRN-003</td>
+                            <td><span class="operation-type type-hoist">Hoist</span></td>
+                            <td>1:58</td>
+                            <td>2,800</td>
+                            <td>Dock 2, Ground</td>
+                            <td>Dock 2, Height 6m</td>
+                            <td>Operator 2</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 11:30:07</td>
+                            <td>CRN-004</td>
+                            <td><span class="operation-type type-lower">Lower</span></td>
+                            <td>1:45</td>
+                            <td>6,100</td>
+                            <td>Storage, Height 12m</td>
+                            <td>Storage, Ground</td>
+                            <td>Operator 4</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 13:15:42</td>
+                            <td>CRN-002</td>
+                            <td><span class="operation-type type-travel">Travel</span></td>
+                            <td>4:22</td>
+                            <td>3,800</td>
+                            <td>Bay 2, Height 10m</td>
+                            <td>Bay 1, Height 10m</td>
+                            <td>Operator 1</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 14:05:19</td>
+                            <td>CRN-005</td>
+                            <td><span class="operation-type type-switch">Switch</span></td>
+                            <td>0:38</td>
+                            <td>1,800</td>
+                            <td>Loading Dock, Position B</td>
+                            <td>Loading Dock, Position C</td>
+                            <td>Operator 5</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 15:22:54</td>
+                            <td>CRN-001</td>
+                            <td><span class="operation-type type-hoist">Hoist</span></td>
+                            <td>2:15</td>
+                            <td>3,500</td>
+                            <td>Bay 3, Ground</td>
+                            <td>Bay 3, Height 9m</td>
+                            <td>Operator 3</td>
+                        </tr>
+                        <tr>
+                            <td>2023-06-14 16:10:27</td>
+                            <td>CRN-003</td>
+                            <td><span class="operation-type type-lower">Lower</span></td>
+                            <td>1:52</td>
+                            <td>2,800</td>
+                            <td>Dock 2, Height 6m</td>
+                            <td>Dock 2, Ground</td>
+                            <td>Operator 2</td>
+                        </tr>
+                        <!-- Continuing with more records... -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set active nav item
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.getAttribute('href') === 'operations.html') {
+                    link.parentElement.classList.add('active');
+                }
+            });
+            
+            // Basic filter functionality
+            document.querySelector('.btn-primary').addEventListener('click', function() {
+                const craneFilter = document.getElementById('crane-filter').value;
+                const typeFilter = document.getElementById('type-filter').value;
+                const dateFilter = document.getElementById('date-filter').value;
+                
+                alert('Filters applied:\nCrane: ' + craneFilter + 
+                      '\nType: ' + typeFilter + 
+                      '\nDate Range: ' + dateFilter);
+            });
+            
+            document.querySelector('.btn-secondary').addEventListener('click', function() {
+                document.getElementById('crane-filter').value = 'all';
+                document.getElementById('type-filter').value = 'all';
+                document.getElementById('date-filter').value = 'all';
+                alert('Filters reset');
+            });
+        });
+    </script>
+</body>
+</html>
